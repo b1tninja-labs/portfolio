@@ -1,0 +1,44 @@
+{
+  "_comment": "Copy-paste install snippets per project, shown on /p/<name> and as an Install link on cards. Each command was run before it was added here; record the date in verified.",
+  "projects": {
+    "mirc-mcp": {
+      "verified": "2026-11-08",
+      "requires": "Windows, mIRC, Python 3.12+ and uv",
+      "snippets": [
+        {"label": "Claude Code", "lang": "shell", "code": "claude mcp add mirc -- uvx --from git+https://github.com/b1tninja/mirc-mcp mirc-mcp"},
+        {"label": "Any MCP client", "lang": "json", "code": "{\n  \"mcpServers\": {\n    \"mirc\": {\n      \"command\": \"uvx\",\n      \"args\": [\"--from\", \"git+https://github.com/b1tninja/mirc-mcp\", \"mirc-mcp\"]\n    }\n  }\n}"},
+        {"label": "Then, once in mIRC", "lang": "text", "code": "/load -rs \"%APPDATA%\\mIRC\\mcp-bridge.mrc\"", "note": "Copy mirc/mcp-bridge.mrc from the repository to %APPDATA%\\mIRC first."}
+      ]
+    },
+    "itulib": {
+      "verified": "2026-11-08",
+      "requires": "Python 3.12+ and uv",
+      "snippets": [
+        {"label": "Fetch the corpus", "lang": "shell", "code": "uvx --from \"itulib[mcp] @ git+https://github.com/b1tninja-labs/itulib\" itulib sync", "note": "Downloads the ASN.1 recommendations (about 14 MB) from itu.int into ~/.itulib. Nothing is redistributed."},
+        {"label": "Claude Code", "lang": "shell", "code": "claude mcp add --scope user itulib -- uvx --from \"itulib[mcp] @ git+https://github.com/b1tninja-labs/itulib\" itulib mcp"},
+        {"label": "Any MCP client", "lang": "json", "code": "{\n  \"mcpServers\": {\n    \"itulib\": {\n      \"command\": \"uvx\",\n      \"args\": [\"--from\", \"itulib[mcp] @ git+https://github.com/b1tninja-labs/itulib\", \"itulib\", \"mcp\"]\n    }\n  }\n}"}
+      ]
+    },
+    "strata-launcher": {
+      "verified": "2026-11-08",
+      "requires": "Windows PowerShell",
+      "snippets": [
+        {"label": "PowerShell", "lang": "powershell", "code": "irm https://raw.githubusercontent.com/b1tninja/strata-launcher/main/install.ps1 | iex", "note": "Runs the installer straight from GitHub. To read it first, open install.ps1 in the repository."}
+      ]
+    },
+    "terraform-aws-strata": {
+      "verified": "2026-11-08",
+      "requires": "Terraform or OpenTofu, and an AWS account with GPU quota",
+      "snippets": [
+        {"label": "Module", "lang": "hcl", "code": "module \"strata\" {\n  source = \"github.com/b1tninja/terraform-aws-strata\"\n  # inputs: see the README\n}"}
+      ]
+    },
+    "faster-whisper-cuda-server": {
+      "verified": "2026-11-08",
+      "requires": "Docker with the NVIDIA container toolkit",
+      "snippets": [
+        {"label": "Docker Compose", "lang": "shell", "code": "git clone https://github.com/b1tninja/faster-whisper-cuda-server.git\ncd faster-whisper-cuda-server\ndocker compose up --build", "note": "Set HF_TOKEN in the environment or a .env file for authenticated model downloads."}
+      ]
+    }
+  }
+}
