@@ -22,7 +22,7 @@ jobs:
           app-id: ${{ vars.PROJECTHUB_APP_ID }}
           private-key: ${{ secrets.PROJECTHUB_APP_PRIVATE_KEY }}
           owner: b1tninja-labs
-      - run: python -m pip install --quiet "git+https://github.com/b1tninja-labs/projecthub@a4a34617f4f057a05b8c1a235cff3b66b388f6a4"
+      - run: python -m pip install --quiet "git+https://github.com/b1tninja-labs/projecthub@19df3fe4117d1fcb1467ab80d52c91c13d0c261e"
       - run: projecthub board --schema-only --apply
         env:
           GH_TOKEN: ${{ steps.token.outputs.token }}
