@@ -19,12 +19,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - id: pages
-        uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v5
+      # Built for the root path: visitors reach it at labs.b1tninja.com through CloudFront, whose origin is
+      # this site's /portfolio path. Links on the raw github.io address will not resolve.
       - name: Build
-        env:
-          BASE: ${{ steps.pages.outputs.base_path }}
-        run: python3 tools/build_site.py --out _site --base "${BASE%/}/" --version "${GITHUB_SHA::7}"
+        run: python3 tools/build_site.py --out _site --base / --version "${GITHUB_SHA::7}"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
