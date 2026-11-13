@@ -49,9 +49,9 @@ jobs:
           app-id: ${{ vars.PROJECTHUB_APP_ID }}
           private-key: ${{ secrets.PROJECTHUB_APP_PRIVATE_KEY }}
           owner: b1tninja-labs
-      # Pinned to the head of b1tninja-labs/projecthub#9 (agents/site-active). Re-pin to main's sha once
-      # that PR merges.
-      - run: python -m pip install --quiet "git+https://github.com/b1tninja-labs/projecthub@f3a360e0c7b9755a2b99383db8e2e3bdbefee384"
+      # Pinned to projecthub main after #8, #9 and #10, so a projecthub change cannot move the site without a
+      # commit here.
+      - run: python -m pip install --quiet "git+https://github.com/b1tninja-labs/projecthub@9b5064982f5e32a9faff964eb63ea93560c6d0d3"
       - name: Data from Project 1
         run: projecthub site --out data --active 6 --budget 100
         env:
