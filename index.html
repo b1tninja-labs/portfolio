@@ -5,7 +5,7 @@
 <base href="/">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>b1tninja: protocol SDKs, agent tools and reverse engineering</title>
-<meta name="description" content="Projects by b1tninja: protocol SDKs, tools, MCP servers and hardware reverse engineering, and reference libraries that give agents the cited, dated context a task needs.">
+<meta name="description" content="What b1tninja-labs is building now: the projects in active development, their rows by status, who holds what, and recent activity, from the organization Project.">
 <meta name="theme-color" content="#0f766e">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230f766e'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="site.css">
@@ -16,33 +16,21 @@
     <a class="brand" href="./">b1tninja</a>
     <nav class="toplinks" aria-label="Elsewhere">
       <a href="https://github.com/b1tninja">GitHub</a>
-      <a id="board-link" href="https://github.com/users/b1tninja/projects/4">Roadmap</a>
+      <a id="board-link" href="https://github.com/b1tninja-labs/portfolio/issues">Roadmap</a>
     </nav>
   </div>
 </header>
 
 <main>
   <div class="wrap hero">
-    <p class="eyebrow">Portfolio</p>
+    <p class="eyebrow">Status</p>
     <h1>Protocol SDKs built from the RFCs, agent tools, and hardware reverse engineering.</h1>
-    <p class="lede">The common thread is context. An agent does better work with the standard, the source text or the documentation in front of it, cited and dated, than with its memory of them, so the reference libraries below exist to serve exactly that, and the SDKs here are written against them.</p>
-    <ul class="stats" id="stats" aria-label="Portfolio totals"></ul>
-  </div>
-
-  <div class="toolbar">
-    <div class="wrap">
-      <nav class="sections" id="sections" aria-label="Sections"></nav>
-      <div class="filters" role="search">
-        <label class="sr-only" for="q">Search projects</label>
-        <input id="q" type="search" placeholder="Search projects" autocomplete="off">
-        <label class="sr-only" for="status">Status</label>
-        <select id="status"><option value="">Any status</option></select>
-      </div>
-    </div>
+    <p class="lede">What is being built right now, straight from the organization's project board: the projects in active development, their work by status, who holds which row, and what happened last.</p>
+    <ul class="stats" id="stats" aria-label="Totals"></ul>
   </div>
 
   <div class="wrap" id="portfolio">
-    <noscript><p class="empty">The project list needs JavaScript. All repositories are on <a href="https://github.com/b1tninja">GitHub</a>.</p></noscript>
+    <noscript><p class="empty">The status page needs JavaScript. All repositories are on <a href="https://github.com/b1tninja">GitHub</a>.</p></noscript>
   </div>
 </main>
 
@@ -51,103 +39,126 @@
 <script src="site.js"></script>
 <script>
 "use strict";
-const COLLAPSED = new Set(["forks", "archive"]);
-let DATA = null;
-let INSTALL = {};
+// Renders data/index.json (schema 3): the active projects first, then one table of everything else.
 
-function card(p) {
-  const meta = el("div", { class: "meta" });
-  const add = (x) => x != null && meta.append(x);
-  add(langLabel(p.language));
-  if (p.tier != null) add(el("span", { title: `Tier ${p.tier}, wave ${p.wave}` }, `T${p.tier} · W${p.wave}`));
-  add(ago(p.last_push));
-  const links = el("span", { class: "links" });
-  if (INSTALL[p.name] && NAME_RE.test(p.name)) links.append(el("a", { class: "install", href: `p/${p.name}#install` }, "install"));
-  if (p.repo_url) links.append(link(p.repo_url, "repo"));
-  if (p.homepage_url) links.append(link(p.homepage_url, "site"));
-  if (links.childNodes.length) add(links);
-
-  const pills = el("div", { class: "pills" });
-  if (p.is_fork || p.upstream) pills.append(el("span", { class: "pill" }, p.upstream ? "fork of " + p.upstream : "fork"));
-  if (p.archived) pills.append(el("span", { class: "pill" }, "archived"));
-  if (p.blocked_by && p.blocked_by.length) pills.append(el("span", { class: "pill warn", title: "Blocked by" }, "needs " + p.blocked_by.join(", ")));
-
-  return el("article", { class: `card st-${KNOWN_STATUS.has(p.status) ? p.status : "other"}` },
-    el("div", { class: "card-top" }, kindLabel(p.kind), statusBadge(p.status)),
-    el("h3", {}, projectLink(p.name, p.display_name || p.name)),
-    p.what ? el("p", {}, p.what) : null,
-    pills.childNodes.length ? pills : null,
-    progressRow(p.progress),
-    meta);
+function claims(list) {
+  if (!Array.isArray(list) || !list.length) return el("p", { class: "note" }, "Nobody holds a row.");
+  return el("ul", { class: "claims" }, ...list.map((c) =>
+    el("li", {}, el("code", {}, c.row || ""), el("span", { class: "who" }, c.holder || ""),
+      c.since ? el("span", { class: "since" }, "since ", ago(c.since) || c.since) : null)));
 }
 
-function matches(p, q, status) {
-  if (status && p.status !== status) return false;
-  if (!q) return true;
-  const hay = [p.name, p.display_name, p.what, p.kind, p.language, p.upstream].filter(Boolean).join(" ").toLowerCase();
-  return q.split(/\s+/).every((t) => hay.includes(t));
+function activity(list) {
+  if (!Array.isArray(list) || !list.length) return el("p", { class: "note" }, "No activity recorded yet.");
+  return el("ol", { class: "activity compact" }, ...list.map((a) =>
+    el("li", {}, el("span", { class: "kind-ev" }, a.kind || ""), ago(a.at))));
+}
+
+function groups(list) {
+  if (!Array.isArray(list) || !list.length) return null;
+  const details = el("details", { class: "rows" }, el("summary", {}, "Rows by status"));
+  for (const g of list) {
+    details.append(el("h4", {}, statusBadge(g.status), el("span", { class: "n" }, String(g.rows.length))),
+      el("ul", {}, ...g.rows.map((r) => el("li", {},
+        link(r.url, el("code", {}, r.id || "")), r.title ? el("span", { class: "muted" }, " " + r.title) : null))));
+  }
+  return details;
+}
+
+function activeCard(p) {
+  const total = Object.values(p.counts || {}).reduce((t, n) => t + n, 0);
+  const links = el("span", { class: "links" });
+  links.append(link(p.issues_url, `${total} issues`));
+  if (p.url) links.append(link(p.url, "project card"));
+  return el("article", { class: "card active-card st-active" },
+    el("div", { class: "card-top" }, el("h3", {}, link(p.issues_url, p.name)), statusBadge(p.status)),
+    p.what ? el("p", {}, p.what) : null,
+    statusMix(p.counts, true),
+    progressRow(p.progress),
+    el("div", { class: "split" },
+      el("div", {}, el("h4", {}, "Holding"), claims(p.claims)),
+      el("div", {}, el("h4", {}, "Recent activity"), activity(p.activity))),
+    groups(p.groups),
+    el("div", { class: "meta" }, p.last_activity ? el("span", {}, "last active ", ago(p.last_activity)) : null, links));
+}
+
+function othersTable(list) {
+  const q = document.getElementById("q").value.trim().toLowerCase();
+  const tbody = el("tbody");
+  const shown = list.filter((p) => !q || p.name.toLowerCase().includes(q) || String(p.status || "").toLowerCase().includes(q));
+  for (const p of shown) {
+    const total = Object.values(p.counts || {}).reduce((t, n) => t + n, 0);
+    tbody.append(el("tr", {},
+      el("td", { class: "id" }, link(p.issues_url, p.name)),
+      el("td", { class: "state" }, statusBadge(p.status)),
+      el("td", { class: "num" }, String(total)),
+      el("td", { class: "num" }, String(p.progress ? p.progress.done : 0)),
+      el("td", { class: "mixcell" }, statusMix(p.counts, false))));
+  }
+  if (!shown.length) tbody.append(el("tr", {}, el("td", { colspan: "5", class: "muted" }, "No projects match.")));
+  return tbody;
 }
 
 function stats(data) {
-  const ps = data.projects;
-  const own = ps.filter((p) => !p.is_fork && !p.archived);
-  const ob = ps.filter((p) => p.progress && p.progress.unit === "obligations");
-  const done = ob.reduce((n, p) => n + p.progress.done, 0);
-  const total = ob.reduce((n, p) => n + p.progress.total, 0);
+  const all = [...data.active, ...data.others];
+  const done = all.reduce((n, p) => n + (p.progress ? p.progress.done : 0), 0);
+  const total = all.reduce((n, p) => n + (p.progress ? p.progress.total : 0), 0);
+  const held = data.active.reduce((n, p) => n + (p.claims ? p.claims.length : 0), 0);
   const items = [
-    [String(own.length), "projects"],
-    [String(ps.filter((p) => p.status === "active").length), "active"],
-    [String(ps.filter((p) => p.status === "planned" || p.status === "blocked").length), "planned"],
+    [String(data.active.length), "in active development"],
+    [String(all.length), "projects on the board"],
+    [`${done}/${total}`, "rows done"],
+    [String(held), "rows held now"],
   ];
-  if (total) items.push([`${done}/${total}`, "obligations done"]);
   document.getElementById("stats").replaceChildren(...items.map(([b, s]) => el("li", {}, el("b", {}, b), el("span", {}, s))));
 }
 
-function render() {
-  const q = document.getElementById("q").value.trim().toLowerCase();
-  const status = document.getElementById("status").value;
-  const filtering = Boolean(q || status);
-  const root = document.getElementById("portfolio");
-  const nav = document.getElementById("sections");
-  root.replaceChildren();
-  nav.replaceChildren();
-  let shown = 0;
-  for (const s of DATA.sections) {
-    const projects = DATA.projects.filter((p) => p.section === s.id && matches(p, q, status));
-    if (!projects.length) continue;
-    shown += projects.length;
-    nav.append(el("a", { href: location.pathname + "#" + s.id }, s.title, el("span", { class: "n" }, String(projects.length))));
-    const grid = el("div", { class: "grid" }, ...projects.map(card));
-    const body = COLLAPSED.has(s.id) && !filtering
-      ? el("details", { class: "more" }, el("summary", {}, `Show ${projects.length} projects`), grid)
-      : grid;
-    root.append(el("section", { class: "group", id: s.id, "aria-labelledby": "h-" + s.id },
-      el("div", { class: "group-head" }, el("h2", { id: "h-" + s.id }, s.title), el("span", { class: "count" }, `${projects.length}`)),
-      el("p", { class: "blurb" }, s.blurb), body));
-  }
-  if (!shown) root.append(el("p", { class: "empty" }, "No projects match."));
+function installs(found) {
+  const names = Object.keys(found).filter((n) => NAME_RE.test(n) && Array.isArray(found[n].snippets) && found[n].snippets.length);
+  if (!names.length) return null;
+  return el("section", { class: "group", id: "install", "aria-labelledby": "h-install" },
+    el("div", { class: "group-head" }, el("h2", { id: "h-install" }, "Install")),
+    ...names.map((n) => el("details", { class: "more", id: "install-" + n },
+      el("summary", {}, n),
+      found[n].requires ? el("p", { class: "install-req" }, "Needs " + found[n].requires + ".") : null,
+      ...found[n].snippets.map(snippet))));
 }
 
-function init(data) {
-  DATA = data;
-  if (data.board_url) {
-    const a = document.getElementById("board-link");
-    if (/^https:\/\/\S+$/.test(data.board_url)) a.href = data.board_url;
-  }
-  const sel = document.getElementById("status");
-  for (const s of [...new Set(data.projects.map((p) => p.status))].sort()) sel.append(el("option", { value: s }, s));
+function init(data, found) {
+  if (data.schema_version !== 3) throw new Error("schema");
+  if (typeof data.board_url === "string" && /^https:\/\/\S+$/.test(data.board_url)) document.getElementById("board-link").href = data.board_url;
   stats(data);
-  render();
-  document.getElementById("q").addEventListener("input", render);
-  sel.addEventListener("change", render);
-  const src = data.source && data.source.commit ? ` from registry ${String(data.source.commit).slice(0, 7)}` : "";
-  document.getElementById("updated").textContent = `Updated ${stamp(data.generated_at)}${src}.`;
+  const root = document.getElementById("portfolio");
+  const active = data.active.length
+    ? el("div", { class: "grid wide" }, ...data.active.map(activeCard))
+    : el("p", { class: "empty" }, "No project is In progress on the board right now.");
+  const search = el("div", { class: "filters", role: "search" },
+    el("label", { class: "sr-only", for: "q" }, "Filter projects"),
+    el("input", { id: "q", type: "search", placeholder: "Filter by name or status", autocomplete: "off" }));
+  const table = el("table", {},
+    el("thead", {}, el("tr", {}, ...["Project", "Status", "Rows", "Done", "Mix"].map((h) => el("th", { scope: "col", class: h === "Rows" || h === "Done" ? "num" : null }, h)))));
+  root.replaceChildren(
+    el("section", { class: "group", id: "active", "aria-labelledby": "h-active" },
+      el("div", { class: "group-head" }, el("h2", { id: "h-active" }, "In active development"), el("span", { class: "count" }, String(data.active.length))),
+      el("p", { class: "blurb" }, `Projects whose card is In progress, most recently active first, at most ${data.active_limit}.`),
+      active),
+    el("section", { class: "group", id: "others", "aria-labelledby": "h-others" },
+      el("div", { class: "group-head" }, el("h2", { id: "h-others" }, "Everything else"), el("span", { class: "count" }, String(data.others.length)), search),
+      el("div", { class: "table-wrap" }, table)));
+  const more = installs(found);
+  if (more) root.append(more);
+  table.append(othersTable(data.others));
+  document.getElementById("q").addEventListener("input", () => table.replaceChild(othersTable(data.others), table.tBodies[0]));
+  const b = data.build || {};
+  const updated = document.getElementById("updated");
+  updated.replaceChildren("Last updated ", el("time", { datetime: data.generated_at, title: stamp(data.generated_at) }, stamp(data.generated_at)),
+    b.requests != null ? ` from ${b.items} board items in ${b.requests} requests (${b.cost} GraphQL points).` : ".");
   if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
 }
 
 Promise.all([getJSON("data/index.json"), getInstall()])
-  .then(([data, install]) => { INSTALL = install; init(data); })
-  .catch(() => loadFailed(document.getElementById("portfolio"), "The project list"));
+  .then(([data, found]) => init(data, found))
+  .catch(() => loadFailed(document.getElementById("portfolio"), "The status page"));
 </script>
 </body>
 </html>
