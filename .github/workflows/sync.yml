@@ -4,12 +4,13 @@ name: Sync the portfolio
 # change pushed to a product shows here without anyone running a sync. The product repositories need no
 # secrets: they are cloned read-only, and only this workflow writes, with the GitHub App's token.
 #
-# The schedule stays off until every issue has moved into this repository. A run before that would not see
-# the issues still in their old repositories and would file duplicates of them here.
+# The schedule runs every 30 minutes now that every project's issues live in this repository. It stayed off
+# during the migration, because a run before then would not have seen the issues still in their old
+# repositories and would have filed duplicates of them here.
 on:
   workflow_dispatch:
-  # schedule:
-  #   - cron: "*/30 * * * *"
+  schedule:
+    - cron: "*/30 * * * *"
 
 permissions:
   contents: read
